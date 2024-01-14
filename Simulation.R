@@ -1,69 +1,56 @@
-eq_cov_mat = function(x1, x2, l1, sigma1, l2, sigma2, maxEval = 20) {
+eq_cov_mat = function(x1, x2, l1, sigma1, l2, sigma2, maxEval = 200) {
   cov = matrix(0, ncol = 2 * nrow(x2), nrow = 2 * ifelse(length(as.matrix(x1)) == 2, 1, nrow(x1)))
-  repr = function(theta) {
-    cbind(c(cos(theta), sin(theta)), c(-sin(theta), cos(theta)))
-  }
   
-  if (length(as.matrix(x1)) > 2) {
-    for (i in 1:nrow(x1)) {
-      for (j in 1:nrow(x2)) {
-        if (i %% 100 == 0) {
-          print(c(i, j))
-        }
-        integrand1 = function(theta) {
-          sigma1^2 * exp(-0.5 * sum((x1[i, ] - repr(theta) %*% as.numeric(x2[j, ]))^2) / (l1^2)) * cos(theta)
-        }
-        result1 = tryCatch(adaptIntegrate(integrand1, 0, 2 * pi, maxEval = maxEval), error = function(e) e)
-        
-        integrand2 = function(theta) {
-          sigma2^2 * exp(-0.5 * sum((x1[i, ] - repr(theta) %*% as.numeric(x2[j, ]))^2) / (l2^2)) * cos(theta)
-        }
-        result2 = tryCatch(adaptIntegrate(integrand2, 0, 2 * pi, maxEval = maxEval), error = function(e) e)
-        
-        integrand3 = function(theta) {
-          sigma2^2 * exp(-0.5 * sum((x1[i, ] - repr(theta) %*% as.numeric(x2[j, ]))^2) / (l2^2)) * sin(theta)
-        }
-        result3 = tryCatch(adaptIntegrate(integrand3, 0, 2 * pi, maxEval = maxEval), error = function(e) e)
-        
-        integrand4 = function(theta) {
-          sigma1^2 * exp(-0.5 * sum((x1[i, ] - repr(theta) %*% as.numeric(x2[j, ]))^2) / (l1^2)) * sin(theta)
-        }
-        result4 = tryCatch(adaptIntegrate(integrand4, 0, 2 * pi, maxEval = maxEval), error = function(e) e)
-        
-        cov[i, j] = result1$integral
-        cov[nrow(x1) + i, nrow(x2) + j] = result2$integral
-        cov[nrow(x1) + i, j] = result3$integral
-        cov[i, nrow(x2) + j] = result4$integral
+  for (i in 1:(length(as.matrix(x1))/2)) {
+    for (j in 1:(length(as.matrix(x2))/2)){
+      if (i %% 100 == 0) {
+        print(c(i, j))
       }
-    }
-  } else {
-    for (j in 1:nrow(x2)) {
+      repr1 = function(theta1,theta2) {
+        sigma1^2*exp(-0.5*sum((cbind(c(cos(theta1), sin(theta1)), c(-sin(theta1), cos(theta1)))%*%as.numeric(x1[i,])-
+                             cbind(c(cos(theta2), sin(theta2)), c(-sin(theta2), cos(theta2)))%*%as.numeric(x2[j,]))^2)/l1)
+      }
+      
+      repr2 = function(theta1,theta2) {
+        sigma2^2*exp(-0.5*sum((cbind(c(cos(theta1), sin(theta1)), c(-sin(theta1), cos(theta1)))%*%as.numeric(x1[i,])-
+                                 cbind(c(cos(theta2), sin(theta2)), c(-sin(theta2), cos(theta2)))%*%as.numeric(x2[j,]))^2)/l2)
+      }
       integrand1 = function(theta) {
-        sigma1^2 * exp(-0.5 * sum((x1 - repr(theta) %*% as.numeric(x2[j, ]))^2) / (l1^2)) * cos(theta)
+        theta1=theta[1]
+        theta2=theta[2]
+        repr1(theta1,theta2)*cos(theta1)*cos(theta2)+ repr2(theta1,theta2)*sin(theta1)*sin(theta2)
       }
-      result1 = tryCatch(adaptIntegrate(integrand1, 0, 2 * pi, maxEval = maxEval), error = function(e) e)
+      result1 = tryCatch(adaptIntegrate(integrand1, lower=c(0,0), upper=c(2 * pi,2*pi), maxEval = maxEval), error = function(e) e)
       
       integrand2 = function(theta) {
-        sigma2^2 * exp(-0.5 * sum((x1 - repr(theta) %*% as.numeric(x2[j, ]))^2) / (l2^2)) * cos(theta)
+        
+        theta1=theta[1]
+        theta2=theta[2]
+        -repr1(theta1,theta2)*cos(theta1)*sin(theta2)+ repr2(theta1,theta2)*sin(theta1)*cos(theta2)
       }
-      result2 = tryCatch(adaptIntegrate(integrand2, 0, 2 * pi, maxEval = maxEval), error = function(e) e)
+      result2 = tryCatch(adaptIntegrate(integrand2,c(0,0), c(2 * pi,2*pi), maxEval = maxEval), error = function(e) e)
       
       integrand3 = function(theta) {
-        sigma2^2 * exp(-0.5 * sum((x1 - repr(theta) %*% as.numeric(x2[j, ]))^2) / (l2^2)) * sin(theta)
+        theta1=theta[1]
+        theta2=theta[2]
+        -repr1(theta1,theta2)*sin(theta1)*cos(theta2)+ repr2(theta1,theta2)*sin(theta2)*cos(theta1)
       }
-      result3 = tryCatch(adaptIntegrate(integrand3, 0, 2 * pi, maxEval = maxEval), error = function(e) e)
+      result3 = tryCatch(adaptIntegrate(integrand3,c(0,0), c(2 * pi,2*pi), maxEval = maxEval), error = function(e) e)
       
       integrand4 = function(theta) {
-        sigma1^2 * exp(-0.5 * sum((x1 - repr(theta) %*% as.numeric(x2[j, ]))^2) / (l1^2)) * sin(theta)
+        theta1=theta[1]
+        theta2=theta[2]
+        repr2(theta1,theta2)*cos(theta1)*cos(theta2)+ repr1(theta1,theta2)*sin(theta1)*sin(theta2)
       }
-      result4 = tryCatch(adaptIntegrate(integrand4, 0, 2 * pi, maxEval = maxEval), error = function(e) e)
+      result4 = tryCatch(adaptIntegrate(integrand4, c(0,0), c(2 * pi,2*pi), maxEval = maxEval), error = function(e) e)
       
-      cov[1, j] = result1$integral
-      cov[2, nrow(x2) + j] = result2$integral
-      cov[2, j] = result3$integral
-      cov[1, nrow(x2) + j] = result4$integral
+      cov[i, j] = result1$integral
+      cov[nrow(x1) + i, nrow(x2) + j] = result4$integral
+      cov[nrow(x1) + i, j] = result3$integral
+      cov[i, nrow(x2) + j] = result2$integral
     }
   }
+  
   
   return(cov)
 }
