@@ -1,4 +1,6 @@
-eq_cov_mat = function(x1, x2, l1, sigma1, l2, sigma2, maxEval = 300) {
+maxEval=500 # this makes it very slow
+mxvl=maxEval
+eq_cov_mat = function(x1, x2, l1, sigma1, l2, sigma2, maxEval = mxvl) {
   cov = matrix(0, ncol = 2 * nrow(x2), nrow = 2 * ifelse(length(as.matrix(x1)) == 2, 1, nrow(x1)))
   
   for (i in 1:(length(as.matrix(x1))/2)) {
@@ -163,7 +165,7 @@ opts=list(algorithm = "NLOPT_GN_ISRES","xtol_rel"=1.0e-12))$solution)
 
 
 
-maxEval=300
+
 posterior_mean_eq=eq_cov_mat(Xte,Xtr,opt_par[1],
                              opt_par[2],
                              opt_par[3],
