@@ -1,16 +1,26 @@
-maxEval=1000 # this makes it very slow
-maxvl=maxEval
-eq_cov_mat = function(x1, x2, l1, sigma1, l2, sigma2, maxEval = maxvl) {
+install.packages("proxy")
+library(proxy)
+install.packages("cubature")
+library(cubature)
+install.packages("nloptr")
+library(nloptr)
+install.packages("pracma")
+library(pracma)
+
+maxEval=1000
+mxevl=maxEval
+eq_cov_mat = function(x1, x2, l1, sigma1, l2, sigma2, maxEval = mxevl) {
   cov = matrix(0, ncol = 2 * nrow(x2), nrow = 2 * ifelse(length(as.matrix(x1)) == 2, 1, nrow(x1)))
   
   for (i in 1:(length(as.matrix(x1))/2)) {
-    for (j in 1:(length(as.matrix(x2))/2)){
-      if (i %% 100 == 0) {
-        print(c(i, j))
+    if (i %% 100 == 0) {
+        print(i)
       }
+    for (j in 1:(length(as.matrix(x2))/2)){
+      
       repr1 = function(theta1,theta2) {
         sigma1^2*exp(-0.5*sum((cbind(c(cos(theta1), sin(theta1)), c(-sin(theta1), cos(theta1)))%*%as.numeric(x1[i,])-
-                             cbind(c(cos(theta2), sin(theta2)), c(-sin(theta2), cos(theta2)))%*%as.numeric(x2[j,]))^2)/l1)
+                                 cbind(c(cos(theta2), sin(theta2)), c(-sin(theta2), cos(theta2)))%*%as.numeric(x2[j,]))^2)/l1)
       }
       
       repr2 = function(theta1,theta2) {
@@ -152,19 +162,24 @@ posterior_mean=cbind(posterior_mean[1:289],posterior_mean[290:578])
 
 (rmse=mean(apply((posterior_mean-Yte)^2,1,sum))^.5)
 
-
-
 (opt_par=nloptr(initial_par, function(x){
   log_likelihood(Ytr,Xtr,x[1],x[2],x[3],x[4],x[5],equivariant = 1)
 },lb=rep.int(0.05,5),ub=rep.int(3,5),
 opts=list(algorithm = "NLOPT_GN_ISRES","xtol_rel"=1.0e-12))$solution)
+
+
 
 #(opt_par=optim(initial_par, function(x){
 #  log_likelihood(Ytr,Xtr,x[1],x[2],x[3],x[4],x[5],equivariant = 1)
 #},control=(ifault = 2),method = "L-BFGS-B",lower=0.05)$par)
 
 
+###################
 
+
+
+
+##############
 
 posterior_mean_eq=eq_cov_mat(Xte,Xtr,opt_par[1],
                              opt_par[2],
@@ -176,7 +191,8 @@ posterior_mean_eq=eq_cov_mat(Xte,Xtr,opt_par[1],
                                                                               opt_par[4],maxEval = maxEval)+
                                                                      diag(opt_par[5],nrow=2*nrow(Xtr)),
                                                                    c(Ytr[,1],Ytr[,2]))
-posterior_mean_eq=cbind(posterior_mean_eq[1:289],posterior_mean_eq[290:578])
+posterior_mean_eq=cbind(posterior_mean_eq[1:(0.5*length(posterior_mean_eq))],
+                        posterior_mean_eq[(0.5*length(posterior_mean_eq)+1):(length(posterior_mean_eq))])
 
 
 (rmse_eq=mean(apply((posterior_mean_eq-Yte)^2,1,sum))^.5)
@@ -224,19 +240,18 @@ Yte=cbind(Xte[,1]/(bd+(Xte[,1]^2+Xte[,2]^2)^2),Xte[,2]/(bd+(Xte[,1]^2+Xte[,2]^2)
 
 #Xtr=cbind(runif(10,-2,2),runif(10,-2,2))
 
-Xtr= matrix(c(
-  -1.46368722, -0.8789689,
-  -1.47354346, -1.1832147,
-  -1.57884999, -1.4650444,
-  0.04633432, -0.6972723,
-  -0.79920378, -1.3797521,
-  -1.89313242, -1.4801514,
-  -0.76141027, -0.2578758,
-  0.96847863, -1.8454294,
-  -1.85817309, 0.8532063,
-  0.26030445, -1.5969238
+Xtr <- matrix(c(
+  -1.25977711, -0.967413407,
+  1.03224558, -0.660621061,
+  0.26712513, -1.465801326,
+  1.72869428, -0.001814459,
+  0.55477327,  1.208542531,
+  0.80299254, -0.651387027,
+  -0.08311013,  0.035682461,
+  1.40124767, -0.022245753,
+  -0.31067730,  1.188211616,
+  -1.87443151,  0.267835582
 ), ncol = 2, byrow = TRUE)
-
 
 Ytr=cbind(Xtr[,1]/(bd+(Xtr[,1]^2+Xtr[,2]^2)^2),Xtr[,2]/(bd+(Xtr[,1]^2+Xtr[,2]^2)^2)) 
 
@@ -277,6 +292,9 @@ posterior_mean=cbind(posterior_mean[1:(0.5*length(posterior_mean))],
   log_likelihood(Ytr,Xtr,x[1],x[2],x[3],x[4],x[5],equivariant = 1)
 },lb=rep.int(0.05,5),ub=rep.int(3,5),
 opts=list(algorithm = "NLOPT_GN_ISRES","xtol_rel"=1.0e-12))$solution)
+
+
+
 
 #(opt_par=optim(initial_par, function(x){
 #  log_likelihood(Ytr,Xtr,x[1],x[2],x[3],x[4],x[5],equivariant = 1)
