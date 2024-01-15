@@ -1,6 +1,6 @@
 maxEval=500 # this makes it very slow
-mxvl=maxEval
-eq_cov_mat = function(x1, x2, l1, sigma1, l2, sigma2, maxEval = mxvl) {
+maxvl=maxEval
+eq_cov_mat = function(x1, x2, l1, sigma1, l2, sigma2, maxEval = maxvl) {
   cov = matrix(0, ncol = 2 * nrow(x2), nrow = 2 * ifelse(length(as.matrix(x1)) == 2, 1, nrow(x1)))
   
   for (i in 1:(length(as.matrix(x1))/2)) {
