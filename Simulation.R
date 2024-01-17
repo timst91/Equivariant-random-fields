@@ -1,21 +1,24 @@
-install.packages("proxy")
+install.packages(c("proxy","cubature","nloptr","pracma","foreach", "doParallel")
 library(proxy)
-install.packages("cubature")
 library(cubature)
-install.packages("nloptr")
 library(nloptr)
-install.packages("pracma")
 library(pracma)
+library(foreach)
+library(doParallel)
 
+                 
 maxEval=1000
 mxevl=maxEval
+
 eq_cov_mat = function(x1, x2, l1, sigma1, l2, sigma2, maxEval = mxevl) {
+  
+  cl = makeCluster(detectCores())
+  registerDoParallel(cl)
+  
   cov = matrix(0, ncol = 2 * nrow(x2), nrow = 2 * ifelse(length(as.matrix(x1)) == 2, 1, nrow(x1)))
   
-  for (i in 1:(length(as.matrix(x1))/2)) {
-    if (i %% 100 == 0) {
-        print(i)
-      }
+  for(i in 1:(length(as.matrix(x1))/2)){
+    if(i%%100==0){print(i)}
     for (j in 1:(length(as.matrix(x2))/2)){
       
       repr1 = function(theta1,theta2) {
@@ -32,7 +35,6 @@ eq_cov_mat = function(x1, x2, l1, sigma1, l2, sigma2, maxEval = mxevl) {
         theta2=theta[2]
         repr1(theta1,theta2)*cos(theta1)*cos(theta2)+ repr2(theta1,theta2)*sin(theta1)*sin(theta2)
       }
-      result1 = tryCatch(adaptIntegrate(integrand1, lower=c(0,0), upper=c(2 * pi,2*pi), maxEval = maxEval), error = function(e) e)
       
       integrand2 = function(theta) {
         
@@ -40,30 +42,36 @@ eq_cov_mat = function(x1, x2, l1, sigma1, l2, sigma2, maxEval = mxevl) {
         theta2=theta[2]
         -repr1(theta1,theta2)*cos(theta1)*sin(theta2)+ repr2(theta1,theta2)*sin(theta1)*cos(theta2)
       }
-      result2 = tryCatch(adaptIntegrate(integrand2,c(0,0), c(2 * pi,2*pi), maxEval = maxEval), error = function(e) e)
       
       integrand3 = function(theta) {
         theta1=theta[1]
         theta2=theta[2]
         -repr1(theta1,theta2)*sin(theta1)*cos(theta2)+ repr2(theta1,theta2)*sin(theta2)*cos(theta1)
       }
-      result3 = tryCatch(adaptIntegrate(integrand3,c(0,0), c(2 * pi,2*pi), maxEval = maxEval), error = function(e) e)
       
       integrand4 = function(theta) {
         theta1=theta[1]
         theta2=theta[2]
         repr2(theta1,theta2)*cos(theta1)*cos(theta2)+ repr1(theta1,theta2)*sin(theta1)*sin(theta2)
       }
-      result4 = tryCatch(adaptIntegrate(integrand4, c(0,0), c(2 * pi,2*pi), maxEval = maxEval), error = function(e) e)
+      fun=list(integrand1,integrand2,integrand3,integrand4)
       
-      cov[i, j] = result1$integral
-      cov[nrow(x1) + i, nrow(x2) + j] = result4$integral
-      cov[nrow(x1) + i, j] = result3$integral
-      cov[i, nrow(x2) + j] = result2$integral
+      results=foreach(l=1:4,.packages = c("cubature"), .combine = cbind,
+                      .export = c("l1", "l2", "sigma1", "sigma2",
+                                  "repr1", "repr2", "integrand1", 
+                                  "integrand2", "integrand3", "integrand4"))%dopar%{
+        adaptIntegrate(fun[[l]], lower=c(0,0), upper=c(2 * pi,2*pi), maxEval = maxEval)$integral
+      }
+      
+      
+      cov[i, j] = results[1]
+      cov[nrow(x1) + i, nrow(x2) + j] = results[4]
+      cov[nrow(x1) + i, j] = results[3]
+      cov[i, nrow(x2) + j] = results[2]
     }
   }
   
-  
+  stopImplicitCluster()
   return(cov)
 }
 
