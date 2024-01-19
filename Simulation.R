@@ -1,4 +1,4 @@
-install.packages(c("proxy","cubature","nloptr","pracma","foreach", "doParallel")
+install.packages(c("proxy","cubature","nloptr","pracma","foreach", "doParallel"))
 library(proxy)
 library(cubature)
 library(nloptr)
