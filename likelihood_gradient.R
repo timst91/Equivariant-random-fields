@@ -1,18 +1,16 @@
-grad_fund=function(xtr,ytr,l1_2,l2_2,sigma1_2,sigma2_2,sigma_obs_2,nu1=,nu2=0){
-  if(nu1==0){
-    
-  }
+grad_fund=function(xtr,ytr,l1_2,l2_2,sigma1_2,sigma2_2,sigma_obs_2){
+ 
   K=eq_cov_mat(xtr,xtr,l1_2^.5,l2_2^.5,sigma1_2^.5,sigma2_2^.5,fundamental=1)+
     diag(sigma_obs_2,nrow=2*nrow(xtr))
   
   K_l1_2 = matrix(0, ncol =2 * ifelse(length(as.matrix(xtr)) == 2, 1, nrow(xtr)),
-               nrow = 2 * ifelse(length(as.matrix(xtr)) == 2, 1, nrow(xtr)))
+                  nrow = 2 * ifelse(length(as.matrix(xtr)) == 2, 1, nrow(xtr)))
   K_l2_2 = matrix(0, ncol =2 * ifelse(length(as.matrix(xtr)) == 2, 1, nrow(xtr)),
                   nrow = 2 * ifelse(length(as.matrix(xtr)) == 2, 1, nrow(xtr)))
   K_sigma1_2 = matrix(0, ncol =2 * ifelse(length(as.matrix(xtr)) == 2, 1, nrow(xtr)),
-                  nrow = 2 * ifelse(length(as.matrix(xtr)) == 2, 1, nrow(xtr)))
+                      nrow = 2 * ifelse(length(as.matrix(xtr)) == 2, 1, nrow(xtr)))
   K_sigma2_2 = matrix(0, ncol =2 * ifelse(length(as.matrix(xtr)) == 2, 1, nrow(xtr)),
-                  nrow = 2 * ifelse(length(as.matrix(xtr)) == 2, 1, nrow(xtr)))
+                      nrow = 2 * ifelse(length(as.matrix(xtr)) == 2, 1, nrow(xtr)))
   
   
   for(i in 1:(length(as.matrix(xtr))/2)){
@@ -53,7 +51,7 @@ grad_fund=function(xtr,ytr,l1_2,l2_2,sigma1_2,sigma2_2,sigma_obs_2,nu1=,nu2=0){
       
       K_l1_2[i, j] = results1[1,1]
       K_l1_2[ifelse(length(as.matrix(xtr))==2,1,nrow(xtr)) + i,
-          ifelse(length(as.matrix(xtr))==2,1,nrow(xtr)) + j] = results1[2,2]
+             ifelse(length(as.matrix(xtr))==2,1,nrow(xtr)) + j] = results1[2,2]
       K_l1_2[ifelse(length(as.matrix(xtr))==2,1,nrow(xtr)) + i, j] = results1[2,1]
       K_l1_2[i,ifelse(length(as.matrix(xtr))==2,1,nrow(xtr)) + j] = results1[1,2]
       
@@ -69,7 +67,7 @@ grad_fund=function(xtr,ytr,l1_2,l2_2,sigma1_2,sigma2_2,sigma_obs_2,nu1=,nu2=0){
       
       K_sigma1_2[i, j] = results3[1,1]
       K_sigma1_2[ifelse(length(as.matrix(xtr))==2,1,nrow(xtr)) + i,
-             ifelse(length(as.matrix(xtr))==2,1,nrow(xtr)) + j] = results3[2,2]
+                 ifelse(length(as.matrix(xtr))==2,1,nrow(xtr)) + j] = results3[2,2]
       K_sigma1_2[ifelse(length(as.matrix(xtr))==2,1,nrow(xtr)) + i, j] = results3[2,1]
       K_sigma1_2[i,ifelse(length(as.matrix(xtr))==2,1,nrow(xtr)) + j] = results3[1,2]
       
@@ -83,17 +81,17 @@ grad_fund=function(xtr,ytr,l1_2,l2_2,sigma1_2,sigma2_2,sigma_obs_2,nu1=,nu2=0){
       
     }
     
-  
+    
   }
   inv_K=solve(K)
   
   grad=c(-t(c(ytr[,1],ytr[,2]))%*%inv_K%*%K_l1_2%*%inv_K%*%c(ytr[,1],ytr[,2])+Trace(inv_K%*%K_l1_2),
-          -t(c(ytr[,1],ytr[,2]))%*%inv_K%*%K_sigma1_2%*%inv_K%*%c(ytr[,1],ytr[,2])+Trace(inv_K%*%K_sigma1_2),
+         -t(c(ytr[,1],ytr[,2]))%*%inv_K%*%K_sigma1_2%*%inv_K%*%c(ytr[,1],ytr[,2])+Trace(inv_K%*%K_sigma1_2),
          -t(c(ytr[,1],ytr[,2]))%*%inv_K%*%K_l2_2%*%inv_K%*%(c(ytr[,1],ytr[,2]))+Trace(inv_K%*%K_l2_2),
          
          -t(c(ytr[,1],ytr[,2]))%*%inv_K%*%K_sigma2_2%*%inv_K%*%(c(ytr[,1],ytr[,2]))+Trace(inv_K%*%K_sigma2_2),
          -t(c(ytr[,1],ytr[,2]))%*%inv_K%*%inv_K%*%c(ytr[,1],ytr[,2])+Trace(inv_K))
-         
+  
   return(grad)
   
 }
@@ -352,7 +350,15 @@ eq_cov_mat = function(x1, x2, l1, sigma1, l2, sigma2, maxEval = mxevl,
 }
 
 
-(opt_par=optim(initial_par[1:5], function(x){
+(opt_par=optim(initial_par, function(x){
   log_likelihood_grad(Ytr,Xtr,x[1],x[2],x[3],x[4],x[5],equivariant = 1,fundamental = 1)
-},gr=function(x){grad_fund(Xtr,Ytr,x[1],x[2],x[3],x[4],x[5])},control=(ifault = 2),method = "L-BFGS-B",lower=0.005)$par)
+},gr=function(x){grad_fund(Xtr,Ytr,x[1],x[2],x[3],x[4],x[5])},control=(ifault = 2),
+method = "L-BFGS-B",lower=0.005)$par)
 
+
+(opt_par=nloptr(initial_par, function(x){
+  log_likelihood_grad(Ytr,Xtr,x[1],x[2],x[3],x[4],x[5],equivariant = 1,fundamental = 1)
+},eval_grad_f  =function(x){grad_fund(Xtr,Ytr,x[1],x[2],x[3],x[4],x[5])}, lb=rep.int(0.0001,5),ub=rep.int(3,5),
+opts=list(algorithm="NLOPT_LD_LBFGS","xtol_rel"=1.0e-16))$solution)
+
+opt_par=opt_par^.5
